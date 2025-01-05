@@ -1,0 +1,654 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, roc_curve
+get_ipython().run_line_magic('matplotlib', 'inline')
+sns.set(style='whitegrid')
+
+
+# In[2]:
+
+
+data = pd.read_csv('/Users/mark/Desktop/Give me some credit.csv')
+data.rename(columns={'default payment next month': 'default'}, inplace=True)
+
+
+# In[3]:
+
+
+print(data.head(5))
+print(data.info())
+print(data.describe())
+
+
+# In[4]:
+
+
+# Renaming column names to something friendlier, using mapping
+column_mapping = {
+    'ID': 'customer_id',
+    'SeriousDlqin2yrs': 'serious_delinquent',
+    'RevolvingUtilizationOfUnsecuredLines': 'revolving_utilisation',
+    'Age': 'age',
+    'NumberOfTime30-59DaysPastDueNotWorse': 'times_30_59_days_past_due',
+    'DebtRatio': 'debt_ratio',
+    'MonthlyIncome': 'monthly_income',
+    'NumberOfOpenCreditLinesAndLoans': 'open_credit_lines',
+    'NumberOfTimes90DaysLate': 'times_90_days_late',
+    'NumberRealEstateLoansOrLines': 'real_estate_loans',
+    'NumberOfTime60-89DaysPastDueNotWorse': 'times_60_89_days_past_due',
+    'NumberOfDependents': 'number_of_dependents'
+}
+# Renaming the columns as mapped above
+data.rename(columns=column_mapping, inplace=True)
+
+
+# In[5]:
+
+
+# Displaying the first few rows to verify renaming
+print(data.head())
+
+# Checking all the updated column names
+print(data.columns)
+
+
+# In[6]:
+
+
+# Checking for missing values
+print(data.isnull().sum())
+
+
+# In[7]:
+
+
+# Imputing Monthly_Income with median
+data['monthly_income'].fillna(data['monthly_income'].median(), inplace=True)
+
+# Imputing Number_of_Dependents with median
+data['number_of_dependents'].fillna(data['number_of_dependents'].median(), inplace=True)
+
+# Capping extreme values in revolving_utilisation and debt_ratio
+data['revolving_utilisation'] = data['revolving_utilisation'].clip(upper=1)
+data['debt_ratio'] = data['debt_ratio'].clip(upper=data['debt_ratio'].quantile(0.99))
+
+
+# In[8]:
+
+
+# Checking for missing values again 
+print(data.isnull().sum())
+
+
+# In[9]:
+
+
+# checking for the distribution of serious delinquents 
+plt.figure(figsize=(6,4))
+sns.countplot(x='serious_delinquent', data=data, palette='viridis')
+plt.title('Distribution of Serious Delinquents')
+plt.xlabel('Serious Delinquent (1 = Yes, 0 = No)')
+plt.ylabel('Count')
+plt.show()
+
+
+# In[10]:
+
+
+plt.figure(figsize=(12,10))
+correlation_matrix = data.corr()
+sns.heatmap(correlation_matrix, annot=True, fmt=".2f", cmap='coolwarm', linewidths=0.5)
+plt.title('Correlation Heatmap of Features')
+plt.show()
+
+
+# In[11]:
+
+
+plt.figure(figsize=(10,6))
+sns.histplot(data=data, x='age', hue='serious_delinquent', multiple='stack', bins=30, palette='Set2')
+plt.title('Age Distribution by Default Status')
+plt.xlabel('Age')
+plt.ylabel('Count')
+plt.show()
+
+
+# In[12]:
+
+
+# Creating new features
+data['total_past_due'] = (data['times_30_59_days_past_due'] + 
+                         data['times_60_89_days_past_due'] + 
+                         data['times_90_days_late'])
+features = ['revolving_utilisation', 'age', 'debt_ratio', 'monthly_income', 
+           'open_credit_lines', 'times_90_days_late', 'real_estate_loans',
+           'total_past_due']
+
+
+X = data[features]
+y = data['serious_delinquent']
+
+# Splitting the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+# In[13]:
+
+
+# Scaling the data
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+
+# In[14]:
+
+
+# Training the model
+model = LogisticRegression(random_state=42, max_iter=1000)
+model.fit(X_train_scaled, y_train)
+
+# Evaluating the model and making predictions
+y_pred = model.predict(X_test_scaled)
+y_pred_proba = model.predict_proba(X_test_scaled)[:, 1]
+
+
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+
+# In[15]:
+
+
+plt.figure(figsize=(8, 6))
+fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
+roc_auc = roc_auc_score(y_test, y_pred_proba)
+
+plt.plot(fpr, tpr, color='darkorange', lw=2, 
+         label=f'ROC curve (AUC = {roc_auc:.2f})')
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc="lower right")
+plt.show()
+
+
+# In[16]:
+
+
+feature_importance = pd.DataFrame({
+    'feature': features,
+    'importance': abs(model.coef_[0])
+})
+feature_importance = feature_importance.sort_values('importance', ascending=False)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(x='importance', y='feature', data=feature_importance)
+plt.title('Feature Importance')
+plt.xlabel('Absolute Coefficient Value')
+plt.show()
+
+
+# In[17]:
+
+
+# Results interpretation
+# Revolving_utilisation is by far the strongest predictor of credit default
+# times_90_days_late and total_past_due are the next most important features
+# monthly_income and age have moderate importance
+# Surprisingly, debt_ratio has relatively low importance
+
+# ---------------------------
+# Classification Metrics:
+
+# High overall accuracy (0.93) but this is misleading due to class imbalance
+# For non-defaulters (class 0):
+
+# Very high precision (0.94) and recall (1.00)
+# Excellent F1-score (0.97)
+
+# For defaulters (class 1):
+
+# Low precision (0.48) and very low recall (0.01)
+# Poor F1-score (0.03)
+
+# ---------------------------
+
+# The model has a significant class imbalance problem. It's great at identifying non-defaulters but very poor at identifying actual defaulters. 
+
+
+# In[18]:
+
+
+pip install imbalanced-learn
+
+
+# In[19]:
+
+
+# Adjusting and calculating class weights in LogisticRegression
+from sklearn.utils.class_weight import compute_class_weight
+
+class_weights = compute_class_weight('balanced', 
+                                   classes=np.unique(y_train), 
+                                   y=y_train)
+class_weight_dict = dict(zip(np.unique(y_train), class_weights))
+
+# Training model with class weights
+weighted_model = LogisticRegression(random_state=42, 
+                                  class_weight=class_weight_dict,
+                                  max_iter=1000)
+weighted_model.fit(X_train_scaled, y_train)
+
+# Making predictions
+y_pred_weighted = weighted_model.predict(X_test_scaled)
+y_pred_proba_weighted = weighted_model.predict_proba(X_test_scaled)[:, 1]
+
+# Printing new classification report
+print("\nClassification Report with Class Weights:")
+print(classification_report(y_test, y_pred_weighted))
+
+# Ploting new ROC curve
+plt.figure(figsize=(8, 6))
+fpr_w, tpr_w, _ = roc_curve(y_test, y_pred_proba_weighted)
+roc_auc_w = roc_auc_score(y_test, y_pred_proba_weighted)
+
+plt.plot(fpr_w, tpr_w, color='darkorange', lw=2, 
+         label=f'ROC curve (AUC = {roc_auc_w:.2f})')
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve with Class Weights')
+plt.legend(loc="lower right")
+plt.show()
+
+# Trying different classification thresholds
+# Finding the optimal threshold
+def find_optimal_threshold(y_true, y_pred_proba):
+    fpr, tpr, thresholds = roc_curve(y_true, y_pred_proba)
+    optimal_idx = np.argmax(tpr - fpr)
+    optimal_threshold = thresholds[optimal_idx]
+    return optimal_threshold
+
+optimal_threshold = find_optimal_threshold(y_test, y_pred_proba_weighted)
+print(f"\nOptimal threshold: {optimal_threshold:.3f}")
+
+# Applying optimal threshold
+y_pred_optimal = (y_pred_proba_weighted >= optimal_threshold).astype(int)
+
+print("\nClassification Report with Optimal Threshold:")
+print(classification_report(y_test, y_pred_optimal))
+
+
+# In[20]:
+
+
+from sklearn.ensemble import RandomForestClassifier
+
+# Creating and training Random Forest with class weights
+rf_model = RandomForestClassifier(
+    n_estimators=100,
+    max_depth=10,
+    class_weight='balanced',
+    random_state=42
+)
+
+rf_model.fit(X_train_scaled, y_train)
+
+# Making predictions
+y_pred_rf = rf_model.predict(X_test_scaled)
+y_pred_proba_rf = rf_model.predict_proba(X_test_scaled)[:, 1]
+
+# Printing classification report
+print("\nRandom Forest Classification Report:")
+print(classification_report(y_test, y_pred_rf))
+
+# Plotting ROC curve
+plt.figure(figsize=(8, 6))
+fpr_rf, tpr_rf, _ = roc_curve(y_test, y_pred_proba_rf)
+roc_auc_rf = roc_auc_score(y_test, y_pred_proba_rf)
+
+plt.plot(fpr_rf, tpr_rf, color='darkorange', lw=2, 
+         label=f'ROC curve (AUC = {roc_auc_rf:.2f})')
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Random Forest ROC Curve')
+plt.legend(loc="lower right")
+plt.show()
+
+# Feature importance for Random Forest
+feature_importance_rf = pd.DataFrame({
+    'feature': features,
+    'importance': rf_model.feature_importances_
+})
+feature_importance_rf = feature_importance_rf.sort_values('importance', ascending=False)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(x='importance', y='feature', data=feature_importance_rf)
+plt.title('Random Forest Feature Importance')
+plt.xlabel('Feature Importance Score')
+plt.show()
+
+
+# In[21]:
+
+
+# Creating new features
+# creating a copy of the original features
+X_new = X.copy()
+
+# Adding new features using loc
+X_new.loc[:, 'income_per_dependent'] = data['monthly_income'] / (data['number_of_dependents'] + 1)
+X_new.loc[:, 'average_past_due'] = data['total_past_due'] / 3
+X_new.loc[:, 'credit_line_per_income'] = data['open_credit_lines'] / (data['monthly_income'] + 1)
+
+# Fine-tuning Random Forest with GridSearchCV
+from sklearn.model_selection import GridSearchCV
+
+# Simplified parameter grid to reduce computation time while still optimising key parameters
+param_grid = {
+    'n_estimators': [100, 200],
+    'max_depth': [10, 15],
+    'min_samples_split': [5],
+    'class_weight': ['balanced']
+}
+
+rf_grid = RandomForestClassifier(random_state=42)
+grid_search = GridSearchCV(
+    estimator=rf_grid,
+    param_grid=param_grid,
+    cv=3,
+    scoring='f1_macro',
+    n_jobs=-1
+)
+
+# Scaling all features
+scaler_new = StandardScaler()
+X_new_scaled = scaler_new.fit_transform(X_new)
+
+# Splitting the new data
+X_train_new, X_test_new, y_train_new, y_test_new = train_test_split(
+    X_new_scaled, y, test_size=0.2, random_state=42
+)
+
+# Fitting the grid search
+grid_search.fit(X_train_new, y_train_new)
+
+# Getting the best model
+best_rf = grid_search.best_estimator_
+print("\nBest parameters:", grid_search.best_params_)
+
+# Making predictions with best model
+y_pred_best = best_rf.predict(X_test_new)
+y_pred_proba_best = best_rf.predict_proba(X_test_new)[:, 1]
+
+# Printing classification report
+print("\nBest Model Classification Report:")
+print(classification_report(y_test_new, y_pred_best))
+
+# Featuring importance plot
+feature_names = list(X_new.columns)
+feature_importance_rf = pd.DataFrame({
+    'feature': feature_names,
+    'importance': best_rf.feature_importances_
+})
+feature_importance_rf = feature_importance_rf.sort_values('importance', ascending=False)
+
+plt.figure(figsize=(12, 6))
+sns.barplot(x='importance', y='feature', data=feature_importance_rf)
+plt.title('Random Forest Feature Importance (Including New Features)')
+plt.xlabel('Feature Importance Score')
+plt.tight_layout()
+plt.show()
+
+
+# In[22]:
+
+
+# Trying to see if we can do better than before so doing it again but with a simpler set of features
+X_new = X.copy()
+X_new.loc[:, 'income_per_dependent'] = data['monthly_income'] / (data['number_of_dependents'] + 1)
+X_new.loc[:, 'average_past_due'] = data['total_past_due'] / 3
+
+# Using a single random forest with reasonable parameters instead of GridSearchCV
+rf_model = RandomForestClassifier(
+    n_estimators=100,  # reduced from 200
+    max_depth=10,      # fixed value
+    min_samples_split=5,
+    class_weight='balanced',
+    random_state=42,
+    n_jobs=-1  # use all cores
+)
+
+# Scaling features
+scaler_new = StandardScaler()
+X_new_scaled = scaler_new.fit_transform(X_new)
+
+# Splitting the data
+X_train_new, X_test_new, y_train_new, y_test_new = train_test_split(
+    X_new_scaled, y, test_size=0.2, random_state=42
+)
+
+# Fitting the model
+print("Training model...")
+rf_model.fit(X_train_new, y_train_new)
+
+# Making predictions
+print("Making predictions...")
+y_pred_new = rf_model.predict(X_test_new)
+y_pred_proba_new = rf_model.predict_proba(X_test_new)[:, 1]
+
+# Printing classification report
+print("\nRandom Forest Classification Report:")
+print(classification_report(y_test_new, y_pred_new))
+
+# Featuring importance plot
+feature_names = list(X_new.columns)
+feature_importance_rf = pd.DataFrame({
+    'feature': feature_names,
+    'importance': rf_model.feature_importances_
+})
+feature_importance_rf = feature_importance_rf.sort_values('importance', ascending=False)
+
+plt.figure(figsize=(12, 6))
+sns.barplot(x='importance', y='feature', data=feature_importance_rf)
+plt.title('Random Forest Feature Importance (Including New Features)')
+plt.xlabel('Feature Importance Score')
+plt.tight_layout()
+plt.show()
+
+
+# In[23]:
+
+
+from sklearn.metrics import f1_score
+
+# Finding optimal threshold for defaulter classification
+thresholds = np.arange(0.1, 0.9, 0.05)
+f1_scores = []
+
+for threshold in thresholds:
+    y_pred_threshold = (y_pred_proba_new >= threshold).astype(int)
+    f1 = f1_score(y_test_new, y_pred_threshold)
+    f1_scores.append(f1)
+
+optimal_threshold = thresholds[np.argmax(f1_scores)]
+print(f"\nOptimal threshold: {optimal_threshold:.2f}")
+
+# Applying optimal threshold
+y_pred_optimal = (y_pred_proba_new >= optimal_threshold).astype(int)
+print("\nClassification Report with Optimal Threshold:")
+print(classification_report(y_test_new, y_pred_optimal))
+
+# Plotting threshold vs F1 score
+plt.figure(figsize=(8, 6))
+plt.plot(thresholds, f1_scores, marker='o')
+plt.xlabel('Threshold')
+plt.ylabel('F1 Score')
+plt.title('Threshold vs F1 Score')
+plt.grid(True)
+plt.show()
+
+
+# In[28]:
+
+
+def assess_loan_application(
+    revolving_utilisation,
+    age,
+    debt_ratio,
+    monthly_income,
+    open_credit_lines,
+    times_90_days_late,
+    real_estate_loans,
+    total_past_due,
+    number_of_dependents=0
+):
+    """
+    Assesses a loan application and provides a detailed risk assessment.
+    """
+    # Creating a DataFrame with exactly the same features used in training
+    application_df = pd.DataFrame([{
+        'revolving_utilisation': revolving_utilisation,
+        'age': age,
+        'debt_ratio': debt_ratio,
+        'monthly_income': monthly_income,
+        'open_credit_lines': open_credit_lines,
+        'times_90_days_late': times_90_days_late,
+        'real_estate_loans': real_estate_loans,
+        'total_past_due': total_past_due,
+        'income_per_dependent': monthly_income / (number_of_dependents + 1),
+        'average_past_due': total_past_due / 3
+    }])
+    
+    # Scaling features
+    features_scaled = scaler_new.transform(application_df)
+    
+    # Getting probability of default
+    default_prob = rf_model.predict_proba(features_scaled)[0][1]
+    
+    # Rest of the function remains the same
+    if default_prob >= 0.70:
+        decision = "REJECT"
+        risk_level = "HIGH RISK"
+    elif default_prob >= 0.30:
+        decision = "REVIEW"
+        risk_level = "MEDIUM RISK"
+    else:
+        decision = "APPROVE"
+        risk_level = "LOW RISK"
+    
+    report = f"""
+Loan Application Assessment
+-------------------------
+Decision: {decision}
+Risk Level: {risk_level}
+Default Probability: {default_prob:.1%}
+
+Key Metrics:
+- Revolving Utilization: {revolving_utilisation:.2f}
+- Age: {age}
+- Debt Ratio: {debt_ratio:.2f}
+- Monthly Income: ${monthly_income:,.2f}
+- Open Credit Lines: {open_credit_lines}
+- Past Due History (90+ days): {times_90_days_late}
+- Real Estate Loans: {real_estate_loans}
+- Total Past Due Instances: {total_past_due}
+- Number of Dependents: {number_of_dependents}
+
+Derived Metrics:
+- Income per Dependent: ${(monthly_income / (number_of_dependents + 1)):,.2f}
+
+Risk Considerations:"""
+    
+    if revolving_utilisation > 0.5:
+        report += "\n- High revolving utilisation indicates potential overextension"
+    if debt_ratio > 0.43:
+        report += "\n- Debt-to-income ratio exceeds recommended threshold"
+    if times_90_days_late > 0:
+        report += "\n- History of serious payment delays"
+    if monthly_income < 3000:
+        report += "\n- Income may be insufficient for new credit"
+    
+    return report
+
+
+# In[25]:
+
+
+example_application = {
+    'revolving_utilisation': 0.5,
+    'age': 45,
+    'debt_ratio': 0.3,
+    'monthly_income': 5000,
+    'open_credit_lines': 5,
+    'times_90_days_late': 0,
+    'real_estate_loans': 1,
+    'total_past_due': 0,
+    'number_of_dependents': 2
+}
+
+print(assess_loan_application(**example_application))
+
+
+# In[26]:
+
+
+# High-risk case
+high_risk = {
+    'revolving_utilisation': 0.9,
+    'age': 25,
+    'debt_ratio': 0.6,
+    'monthly_income': 2000,
+    'open_credit_lines': 10,
+    'times_90_days_late': 2,
+    'real_estate_loans': 0,
+    'total_past_due': 3,
+    'number_of_dependents': 1
+}
+
+# Low-risk case
+low_risk = {
+    'revolving_utilisation': 0.2,
+    'age': 45,
+    'debt_ratio': 0.25,
+    'monthly_income': 8000,
+    'open_credit_lines': 3,
+    'times_90_days_late': 0,
+    'real_estate_loans': 1,
+    'total_past_due': 0,
+    'number_of_dependents': 2
+}
+
+print("\nHigh Risk Example:")
+print(assess_loan_application(**high_risk))
+print("\nLow Risk Example:")
+print(assess_loan_application(**low_risk))
+
+
+# In[27]:
+
+
+# The model effectively distinguishes between high-risk and low-risk borrowers, 
+# rejecting an application with multiple red flags (91.4% default probability) including high revolving utilisation, low income, and payment history issues, 
+# while approving a strong application (13.4% default probability) characterised by stable income, good payment history, and conservative credit use.
+
