@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Jani - Portfolio</title>
+    <style>
+        :root {
+            --primary-blue: #0066cc;
+            --secondary-purple: #6b46c1;
+            --accent-orange: #ff6b35;
+            --dark-gray: #2d3748;
+            --light-gray: #f7fafc;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        #container_1 {
+            background: black;
+            color: white;
+            padding: 10px 20px 30px 40px;
+            margin: 10px;
+        }
+
+        #container_2 {
+            background: #333;
+            color: white;
+            padding: 15px 25px;
+            margin: 15px;
+            border-radius: 8px;
+        }
+
+        #skills_container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+            background: var(--light-gray);
+            margin: 20px auto;
+            max-width: 1200px;
+        }
+
+        .skill_card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-width: 250px;
+            transition: transform 0.3s ease;
+        }
+
+        .skill_card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn_primary {
+            background: var(--primary-blue);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn_primary:hover {
+            background: #0052cc;
+            transform: translateY(-2px);
+        }
+
+        /* Projects section */
+        .project_card {
+            border-left: 4px solid var(--primary-blue);
+            padding: 20px;
+            margin: 10px 0;
+            background: var(--light-gray);
+        }
+
+        .fade_in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            #skills_container {
+                flex-direction: column;
+            }
+
+            #container_1, #container_2 {
+                padding: 10px;
+                margin: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Example Container 1 -->
+    <div id="container_1" class="fade_in">
+        <h1>Mark Jani</h1>
+        <p>Aspiring Software Developer</p>
+    </div>
+
+    <!-- Example Container 2 -->
+    <div id="container_2" class="fade_in">
+        <h2>About Me</h2>
+        <p>Passionate junior software developer with little experience in web development.</p>
+    </div>
+
+    <!-- Skills Section -->
+    <div id="skills_container">
+        <div class="skill_card">
+            <h3>Frontend Development</h3>
+            <p>HTML, CSS, JavaScript, React</p>
+        </div>
+        <div class="skill_card">
+            <h3>Backend Development</h3>
+            <p>Node.js, Python, SQL</p>
+        </div>
+        <div class="skill_card">
+            <h3>Tools & Technologies</h3>
+            <p>Git, Docker, AWS</p>
+        </div>
+    </div>
+
+    <!-- Contact Section -->
+    <div id="container_1">
+        <h2>Let's Connect</h2>
+        <a href="https://uk.linkedin.com/in/mark-jani" class="btn_primary" target="_blank">LinkedIn Profile</a>
+    </div>
+</body>
+</html>
