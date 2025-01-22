@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Jani - Portfolio</title>
+    <style>
+        :root {
+            --primary-blue: #0066cc;
+            --secondary-purple: #6b46c1;
+            --accent-orange: #ff6b35;
+            --dark-gray: #2d3748;
+            --light-gray: #f7fafc;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s ease;
+        }
+
+        #container_1 {
+            background: black;
+            color: white;
+            padding: 10px 20px 30px 40px;
+            margin: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        #container_2 {
+            background: #333;
+            color: white;
+            padding: 15px 25px;
+            margin: 15px;
+            border-radius: 8px;
+        }
+
+        #skills_container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+            background: var(--light-gray);
+            margin: 20px auto;
+            max-width: 1200px;
+        }
+
+        .skill_card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-width: 250px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .skill_card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn_primary {
+            background: var(--primary-blue);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn_primary:hover {
+            background: #0052cc;
+            transform: translateY(-2px);
+        }
+
+        .project_card {
+            border-left: 4px solid var(--primary-blue);
+            padding: 20px;
+            margin: 10px 0;
+            background: var(--light-gray);
+        }
+
+        .fade_in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            #skills_container {
+                flex-direction: column;
+            }
+
+            #container_1, #container_2 {
+                padding: 10px;
+                margin: 5px;
+            }
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: var(--primary-blue);
+            width: 0;
+            transition: width 0.2s;
+            z-index: 1000;
+        }
+
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            font-size: 20px;
+            z-index: 1000;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .dark-mode {
+            background-color: #1a1a1a;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    
+    <div id="container_1" class="fade_in">
+        <h1>Mark Jani</h1>
+        <p>Aspiring Software Developer</p>
+    </div>
+
+    <div id="container_2" class="fade_in">
+        <h2>About Me</h2>
+        <p>Passionate junior software developer with little experience in web development.</p>
+    </div>
+
+
+    <div id="skills_container">
+        <div class="skill_card">
+            <h3>Frontend Development</h3>
+            <p>HTML, CSS, JavaScript, React</p>
+        </div>
+        <div class="skill_card">
+            <h3>Backend Development</h3>
+            <p>Node.js, Python, SQL</p>
+        </div>
+        <div class="skill_card">
+            <h3>Tools & Technologies</h3>
+            <p>Git, Docker, AWS</p>
+        </div>
+    </div>
+
+
+    <div id="container_1">
+        <h2>Let's Connect</h2>
+        <a href="https://uk.linkedin.com/in/mark-jani" class="btn_primary" target="_blank">LinkedIn Profile</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            document.body.appendChild(progressBar);
+
+            
+            const scrollTopBtn = document.createElement('button');
+            scrollTopBtn.innerHTML = '↑';
+            scrollTopBtn.className = 'scroll-top-btn';
+            document.body.appendChild(scrollTopBtn);
+
+            
+            const themeToggle = document.createElement('button');
+            themeToggle.textContent = '🌙';
+            themeToggle.className = 'btn_primary theme-toggle';
+            document.body.appendChild(themeToggle);
+
+            
+            const skillCards = document.querySelectorAll('.skill_card');
+            
+            
+            skillCards.forEach(card => {
+                let clicks = 0;
+                const counter = document.createElement('p');
+                counter.style.fontSize = '12px';
+                counter.style.marginTop = '10px';
+                card.appendChild(counter);
+
+                card.addEventListener('click', function() {
+                    clicks++;
+                    counter.textContent = `Clicked ${clicks} times`;
+                    
+                    
+                    const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+                    this.style.backgroundColor = randomColor;
+                    this.style.color = 'white';
+                });
+
+                
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.05) rotate(2deg)';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1) rotate(0deg)';
+                });
+            });
+
+            
+            window.addEventListener('scroll', () => {
+                const windowHeight = document.documentElement.scrollHeight - window.innerHeight;
+                const progress = (window.scrollY / windowHeight) * 100;
+                progressBar.style.width = `${progress}%`;
+                
+                
+                scrollTopBtn.style.display = window.scrollY > 300 ? 'block' : 'none';
+            });
+
+            scrollTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+
+            let isDarkMode = false;
+            themeToggle.addEventListener('click', () => {
+                isDarkMode = !isDarkMode;
+                document.body.classList.toggle('dark-mode');
+                themeToggle.textContent = isDarkMode ? '☀️' : '🌙';
+            });
+
+            const nameElement = document.querySelector('#container_1 h1');
+            const originalName = nameElement.textContent;
+            nameElement.textContent = '';
+            let charIndex = 0;
+
+            function typeWriter() {
+                if (charIndex < originalName.length) {
+                    nameElement.textContent += originalName.charAt(charIndex);
+                    charIndex++;
+                    setTimeout(typeWriter, 100);
+                }
+            }
+
+            typeWriter();
+
+            let currentFocus = -1;
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    skillCards.forEach(card => card.style.border = 'none');
+                    currentFocus = (currentFocus + 1) % skillCards.length;
+                    skillCards[currentFocus].style.border = '2px solid var(--primary-blue)';
+                }
+                if (e.key === 'Enter' && currentFocus !== -1) {
+                    skillCards[currentFocus].click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
